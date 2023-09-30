@@ -3,27 +3,35 @@ data Int {
 }
 
 component provides server.Server requires io.Output out, data.adt.List:heap list,
-	http.HTTPUtil httpUtil, data.IntUtil iu {
+	http.HTTPUtil httpUtil, data.IntUtil iu, data.DecUtil du, util.Math math {
 
 	void Server:process(HTTPMessage msg) {
 		if (msg.command == "GET") {
-			Data nums[] = list.getContents()
-			if (nums.arrayLength == 0) {
-				sendResponse(msg, "EMPTY")
-			} else {
-				char result[] = new char[]("[")
-				for (int i = 0; i < nums.arrayLength; i++) {
-					Int num = nums[i]
-					result = new char[](result, " ", iu.intToString(num.i))
-				}
-				result = new char[](result, " ]")
-				sendResponse(msg, result)
-			}
+			sendResponse(msg, "Hello from Dana server!")
 		} else if (msg.command == "POST") {
-			Int num = new Int(iu.intFromString(msg.postData))
-			list.add(num)
-			sendResponse(msg, "OK")
+			int num = iu.intFromString(msg.postData)
+
+			if (isPrime(num)) {
+				sendResponse(msg, "PRIME")
+			} else {
+				sendResponse(msg, "NOT PRIME")
+			}
 		}
+	}
+
+	bool isPrime(int num) {
+		if (num <= 3) {
+			return num > 1
+		}
+
+		int root = math.ceil(math.sqrt(num))
+		for (int i = 2; i < num; i++) {
+			if (num % i == 0) {
+				return false
+			}
+		}
+
+		return true
 	}
 
 	void sendResponse(HTTPMessage httpMessage, char response[]) {
