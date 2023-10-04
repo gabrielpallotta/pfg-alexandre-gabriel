@@ -1,0 +1,186 @@
+uses data.String
+
+data Param {
+	char value[]
+}
+
+data Request {
+	char functionName[]
+	int numParams
+	Param params[]
+}
+
+data Response {
+	// 1 OK - 2 FAILED
+	byte status
+	// if it's null or "" this has to be translated to null
+	char value[]
+}
+
+data IPAddr {
+	char ip[]
+	int port
+}
+
+data Int {
+	int i
+}
+
+data ShardState {
+	Int state[]
+}
+
+/* Available list operations */
+const char IS_PRIME[] = "isPrime"
+
+component 
+  provides
+    prime.Prime(Destructor, AdaptEvents) 
+  requires 
+    net.TCPSocket,
+    data.json.JSONEncoder parser,
+    data.StringUtil strUtil,
+    data.IntUtil iu,
+    io.Output out,
+    hash.Multiplicative hash,
+    serverctl.Serverctl SCTL
+{
+	IPAddr remoteDistIps[] = null
+  	IPAddr remoteListsIps[] = null
+
+	void startRemoteIps() {
+		out.println("Starting prime sharding proxy...")
+
+		String pods[] = SCTL.get_service_names()
+		remoteDistIps = new IPAddr[pods.arrayLength]
+		remoteListsIps = new IPAddr[pods.arrayLength] 
+		for (int i = 0; i < pods.arrayLength; i++){
+			remoteDistIps[i] = new IPAddr()
+			remoteDistIps[i].ip = new char[]("$(pods[i].string)")
+			remoteDistIps[i].port = 5000
+
+			remoteListsIps[i] = new IPAddr()
+			remoteListsIps[i].ip = new char[]("$(pods[i].string)")
+			remoteListsIps[i].port = 5001
+		}
+  }
+
+	Response parseResponse(char content[]) {
+		String helper[] = strUtil.explode(content, "!")
+		Response response
+		if (helper.arrayLength > 1) {
+			response = parser.jsonToData(helper[0].string, typeof(Response), null)
+			Response response2 = new Response()
+			response2.value = helper[1].string
+			response2.status = response.status
+			response = response2
+		} else {
+			response = parser.jsonToData(content, typeof(Response), null)
+		}
+		return response
+	}
+
+	Response readResponse(TCPSocket s) {
+		Response response = null
+		char buf[] = null
+		int len = 0
+		char command[] = null
+		while ((buf = s.recv(1)).arrayLength > 0) {
+			command = new char[](command, buf)
+			len++
+			//stop condition
+			if (len >= 4) {
+				if ((command[len-4] == "\r") && (command[len-3] == "\r") &&
+					(command[len-2] == "\r") && (command[len-1] == "\r")) {
+					response = parseResponse(strUtil.subString(command,
+						0, command.arrayLength-4))
+					break
+				}
+			}
+		}
+		if (response == null) { s.disconnect() }
+		return response
+	}
+
+	bool establishConnection(IPAddr addr, TCPSocket remoteObj) {
+    out.println("$(addr.ip)")
+    out.println("$(iu.intToString(addr.port))")
+		if (!remoteObj.connect(addr.ip, addr.port)) {
+			out.println("Connection error!")
+			return false
+		}
+		return true
+	}
+
+	Response makeRequest(IPAddr addr, char content[], bool readResponse) {
+    TCPSocket remoteObj = new TCPSocket()
+		Response resp = null
+		if (establishConnection(addr, remoteObj)) {
+			remoteObj.send(content)
+			if (readResponse) { resp = readResponse(remoteObj) }
+			remoteObj.disconnect()
+		}
+		return resp
+	}
+
+
+	bool Prime:isPrime(int num, int start, int end) {
+		Request request = new Request()
+		request.functionName = IS_PRIME
+		request.numParams = 3
+		char requestStr[] = parser.jsonFromData(request, null)
+		char content[] = new char[](requestStr, "!", num, "!", start, "!", end, "\r\r\r\r")
+
+		for (int i = 0; i < remoteListsIps.arrayLength; i++) {
+			out.println("remote $(remoteListsIps[i].ip):$(remoteListsIps[i].port)")
+		}
+
+		IPAddr addr = remoteListsIps[0]
+		makeRequest(addr, content, false)
+
+		return true
+	}
+
+	void Destructor:destroy() {
+		
+	}
+
+	void AdaptEvents:inactive() {
+		out.println("PRIME SHARDING INACTIVE")
+		// if (content != null) {
+		// 	content = getContents()
+		// 	char msg[] = new char[]("clearList!\r\r\r\r")
+		// 	startRemoteIps()             
+		// 	for (int i = 0; i < remoteDistIps.arrayLength; i++) {
+		// 		makeRequest(remoteDistIps[i], msg, true)
+		// 	}
+		// }
+	}
+
+	void AdaptEvents:active() {
+		out.println("PRIME SHARDING ACTIVE")
+		// startRemoteIps()
+		// ShardState shardState[] = new ShardState[remoteDistIps.arrayLength]
+
+		// for (int i = 0; i < remoteDistIps.arrayLength; i++) {
+		// 	shardState[i] = new ShardState()
+		// }
+
+		// for (int i = 0; i < content.arrayLength; i++) {
+		// 	Int num = content[i]
+		// 	int remoteIdx = hash.h(num.i, remoteDistIps.arrayLength)
+			
+		// 	shardState[remoteIdx].state = new Int[](shardState[remoteIdx].state, num)
+		// }
+
+		// for (int i = 0; i < remoteDistIps.arrayLength; i++) {
+		// 	char state[] = ""
+		// 	if (shardState[i].state != null) {
+		// 		state = parser.jsonFromArray(shardState[i].state, null)
+		// 	}
+	
+		// 	char msg[] = new char[]("../distributor/RemoteList.o!", state, "\r\r\r\r")
+		// 	makeRequest(remoteDistIps[i], msg, true)
+		// }
+	}
+}

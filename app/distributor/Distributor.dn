@@ -36,10 +36,8 @@ component
     out.println("Command list:")
     out.println(" $(HELP) - to list all commands")
     out.println(" $(CREATE) - to create pods")
-    out.println(" $(ALTERNATE) - to distribute list alternating requests between replicas")
-    out.println(" $(PROPAGATE) - to distribute list propagating write requests to all replicas")
-    out.println(" $(SHARDING) - to distribute list with sharding")
-    out.println(" $(LOCAL) - to bring list locally")
+    out.println(" $(SHARDING) - to distribute prime with sharding")
+    out.println(" $(LOCAL) - to bring prime locally")
     out.println(" $(PERCEPTION) - to get perception data from the current running composition")
     out.println(" $(EXIT) - to finish execution")
   }
@@ -61,10 +59,10 @@ component
     out.print("Number of pods: \n")
     char quantity[] = in.readln()
     SCTL.create_pods(iu.intFromString(quantity))
-    t.sleep(9000) // Temp solution
+    //t.sleep(9000) // Temp solution
     out.println("$(iu.intFromString(quantity)) pods were created")
 
-    char remoteConfig[] = getRemoteConfig("data/adt/$(proxyInterface)")
+    char remoteConfig[] = getRemoteConfig("prime/$(proxyInterface)")
     if (remoteConfig != null) {	
       perception.setConfig(remoteConfig)
       out.println("$(debugMSG) Remote composition [($proxyInterface)] running.")	
@@ -119,22 +117,11 @@ component
       if (cmd == HELP) {
         help()
       } else if (cmd == SHARDING) {
-        distribute("ListCPSharding.o")
+        distribute("PrimeCPSharding.o")
       } else if (cmd == LOCAL) {
         local()
       } else if (cmd == PERCEPTION) {
         perception()
-      } else if (cmd == TEST) {
-        out.println("$(debugMSG) Starting test...")
-        local()
-        observationLoop(10, 1000)
-        distribute("ListCPPropagate.o")
-        observationLoop(10, 1000)
-        distribute("ListCPAlternate.o")
-        observationLoop(10, 1000)
-        distribute("ListCPSharding.o")
-        observationLoop(10, 1000)
-        out.println("$(debugMSG) Test finished!")
       } else if (cmd == PODS) {
         SCTL.get_service_names()
       } else {
@@ -144,7 +131,9 @@ component
 	}
 
   char[] getRemoteConfig(char proxy[]) {
+    out.println("Remote configs size: $(remoteConfigs.arrayLength)")
     for (int pointer = 0; pointer < remoteConfigs.arrayLength; pointer++) {
+      out.println("REMOTE CONFIG $(remoteConfigs[pointer].string) $(proxy)")
       if (strUtil.find(remoteConfigs[pointer].string, proxy) != StringUtil.NOT_FOUND) {
         return remoteConfigs[pointer].string
       }
@@ -179,9 +168,7 @@ component
   void loadDistributedProxies() {
     if (distributedProxies == null) {
       distributedProxies = new String[](
-        new String("ListCPPropagate.o"),
-        new String("ListCPAlternate.o"),
-        new String("ListCPSharding.o"))
+        new String("PrimeCPSharding.o"))
     }
   }
 
