@@ -125,22 +125,40 @@ component
 		return resp
 	}
 
+	void makeRequestAsync(IPAddr addr, char content[], Response responses[], int index) {
+		responses[index] = makeRequest(addr, content, true)
+	}
 
 	bool Prime:isPrime(int num, int start, int end) {
 		Request request = new Request()
 		request.functionName = IS_PRIME
 		request.numParams = 3
 		char requestStr[] = parser.jsonFromData(request, null)
-		char content[] = new char[](requestStr, "!", iu.makeString(num), "!", iu.makeString(start), "!", iu.makeString(end), "\r\r\r\r")
+		
+		Thread threads[] = new Thread[remoteListsIps.arrayLength]()
+		Response responses[] = new Response[remoteListsIps.arrayLength]()
+
 
 		for (int i = 0; i < remoteListsIps.arrayLength; i++) {
-			out.println("remote $(remoteListsIps[i].ip):$(remoteListsIps[i].port)")
+			int rangeSize = (num - 2) / remoteListsIps.arrayLength
+			int rangeStart = 2 + i * rangeSize
+			int rangeEnd = 2 + (i + 1) * rangeSize
+
+			char content[] = new char[](requestStr, "!", iu.makeString(num), "!", iu.makeString(rangeStart), "!", iu.makeString(rangeEnd), "\r\r\r\r")
+			threads[i] = asynch::makeRequestAsync(remoteListsIps[i], content, responses, i)
 		}
 
-		IPAddr addr = remoteListsIps[0]
-		Response response = makeRequest(addr, content, true)
+		for (int i = 0; i < remoteListsIps.arrayLength; i++) {
+			threads[i].join()
+		}
 
-		return response.value == "PRIME"
+		for (int i = 0; i < remoteListsIps.arrayLength; i++) {
+			if (responses[i].value == "NOT PRIME") {
+				return false
+			}
+		}
+
+		return true
 	}
 
 	void Destructor:destroy() {
