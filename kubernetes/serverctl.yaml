@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: serverctl
-        image: robertovrf/server-ctl:latest
+        image: us-central1-docker.pkg.dev/pfg-alexandre-gabriel/pfg-alexandre-gabriel/server-ctl-prime:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5000

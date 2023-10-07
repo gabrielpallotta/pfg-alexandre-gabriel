@@ -35,6 +35,8 @@ component provides proxy.DistProxy requires io.Output out, data.IntUtil iu, net.
 		int start = iu.intFromString(request.params[1].value)
 		int end = iu.intFromString(request.params[2].value)
 
+		out.println("Received isPrime request: $(num) $(start) $(end)")
+
 		response.status = 3
 
 		if (prime.isPrime(num, start, end)) {
@@ -42,14 +44,20 @@ component provides proxy.DistProxy requires io.Output out, data.IntUtil iu, net.
 		} else {
 			response.value = "NOT PRIME"
 		}
+
+		out.println("Responding with $(response.value)")
+
 		
 		return response
 	}
 
 	Response interpretRequest(Request request) {
+		out.println("Interpreting request: $(request.functionName)")
+
 		if (request.functionName == IS_PRIME) {
 			return isPrimeRequest(request)
 		} else {
+			out.println("Received unknown request")
 			Response response = new Response()
 			response.status = 2
 			response.value = ""
@@ -58,13 +66,14 @@ component provides proxy.DistProxy requires io.Output out, data.IntUtil iu, net.
 	}
 
 	Request parseRequest(char content[]) {
+		out.println("Received content: $(content)")
 		String helper[] = strUtil.explode(content, "!")
 		Request request = parser.jsonToData(helper[0].string, typeof(Request), null)
 		Request newRequest = new Request()
 		newRequest.numParams = request.numParams
 		newRequest.functionName = request.functionName
+		newRequest.params = new Param[newRequest.numParams]()
 		for (int i = 0; i < newRequest.numParams; i++) {
-			newRequest.params = new Param[newRequest.numParams]()
 			newRequest.params[i] = new Param()
 			newRequest.params[i].value = helper[i+1].string
 		}
@@ -116,7 +125,7 @@ component provides proxy.DistProxy requires io.Output out, data.IntUtil iu, net.
 	}
 
 	void DistProxy:start(int port) {
-		out.println("STARTED")
+		out.println("Starting DistProxy")
 		serviceStatus = true
 		host = new TCPServerSocket()
 		if (!host.bind(TCPServerSocket.ANY_ADDRESS, port)) {

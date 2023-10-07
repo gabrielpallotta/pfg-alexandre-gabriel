@@ -113,7 +113,9 @@ component
 	}
 
 	Response makeRequest(IPAddr addr, char content[], bool readResponse) {
-    TCPSocket remoteObj = new TCPSocket()
+		out.println("Sending request to $(addr.ip):$(addr.port): $(content)")
+
+    	TCPSocket remoteObj = new TCPSocket()
 		Response resp = null
 		if (establishConnection(addr, remoteObj)) {
 			remoteObj.send(content)
@@ -129,16 +131,16 @@ component
 		request.functionName = IS_PRIME
 		request.numParams = 3
 		char requestStr[] = parser.jsonFromData(request, null)
-		char content[] = new char[](requestStr, "!", num, "!", start, "!", end, "\r\r\r\r")
+		char content[] = new char[](requestStr, "!", iu.makeString(num), "!", iu.makeString(start), "!", iu.makeString(end), "\r\r\r\r")
 
 		for (int i = 0; i < remoteListsIps.arrayLength; i++) {
 			out.println("remote $(remoteListsIps[i].ip):$(remoteListsIps[i].port)")
 		}
 
 		IPAddr addr = remoteListsIps[0]
-		makeRequest(addr, content, false)
+		Response response = makeRequest(addr, content, true)
 
-		return true
+		return response.value == "PRIME"
 	}
 
 	void Destructor:destroy() {
@@ -146,41 +148,17 @@ component
 	}
 
 	void AdaptEvents:inactive() {
-		out.println("PRIME SHARDING INACTIVE")
-		// if (content != null) {
-		// 	content = getContents()
-		// 	char msg[] = new char[]("clearList!\r\r\r\r")
-		// 	startRemoteIps()             
-		// 	for (int i = 0; i < remoteDistIps.arrayLength; i++) {
-		// 		makeRequest(remoteDistIps[i], msg, true)
-		// 	}
-		// }
+		out.println("Deactivating prime proxy...")
 	}
 
 	void AdaptEvents:active() {
-		out.println("PRIME SHARDING ACTIVE")
-		// startRemoteIps()
-		// ShardState shardState[] = new ShardState[remoteDistIps.arrayLength]
+		out.println("Activating prime proxy...")
 
-		// for (int i = 0; i < remoteDistIps.arrayLength; i++) {
-		// 	shardState[i] = new ShardState()
-		// }
+		startRemoteIps()
 
-		// for (int i = 0; i < content.arrayLength; i++) {
-		// 	Int num = content[i]
-		// 	int remoteIdx = hash.h(num.i, remoteDistIps.arrayLength)
-			
-		// 	shardState[remoteIdx].state = new Int[](shardState[remoteIdx].state, num)
-		// }
-
-		// for (int i = 0; i < remoteDistIps.arrayLength; i++) {
-		// 	char state[] = ""
-		// 	if (shardState[i].state != null) {
-		// 		state = parser.jsonFromArray(shardState[i].state, null)
-		// 	}
-	
-		// 	char msg[] = new char[]("../distributor/RemoteList.o!", state, "\r\r\r\r")
-		// 	makeRequest(remoteDistIps[i], msg, true)
-		// }
+		for (int i = 0; i < remoteDistIps.arrayLength; i++) {
+		 	char msg[] = new char[]("../distributor/RemotePrime.o!\r\r\r\r")
+		 	makeRequest(remoteDistIps[i], msg, true)
+		 }
 	}
 }

@@ -59,7 +59,7 @@ component
     out.print("Number of pods: \n")
     char quantity[] = in.readln()
     SCTL.create_pods(iu.intFromString(quantity))
-    //t.sleep(9000) // Temp solution
+    t.sleep(9000) // Temp solution
     out.println("$(iu.intFromString(quantity)) pods were created")
 
     char remoteConfig[] = getRemoteConfig("prime/$(proxyInterface)")

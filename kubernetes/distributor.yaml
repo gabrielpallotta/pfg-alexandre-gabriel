@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: distributor
-        image: andrepapoti/distributor:latest
+        image: us-central1-docker.pkg.dev/pfg-alexandre-gabriel/pfg-alexandre-gabriel/distributor-prime:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5000

@@ -1,6 +1,6 @@
 const int DEFAULT_PORT = 5001
 
-component provides App requires io.Output out, data.IntUtil iu, proxy.DistProxy list {
+component provides App requires io.Output out, data.IntUtil iu, proxy.DistProxy prime {
 
 	int port = 0
 
@@ -12,7 +12,7 @@ component provides App requires io.Output out, data.IntUtil iu, proxy.DistProxy 
 			port = DEFAULT_PORT
 		}
 
-		list.start(port)
+		prime.start(port)
 
 		return 0
 	}

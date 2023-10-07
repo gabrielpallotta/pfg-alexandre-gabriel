@@ -27,7 +27,7 @@ def load_deployment(deployment_name):
         spec:
           containers:
           - name: {deployment_name}
-            image: robertovrf/remote-dist:latest
+            image: us-central1-docker.pkg.dev/pfg-alexandre-gabriel/pfg-alexandre-gabriel/remote-dist-prime:latest
             imagePullPolicy: Always
             ports:
             - containerPort: 5000
