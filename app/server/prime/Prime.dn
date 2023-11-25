@@ -1,0 +1,15 @@
+component provides prime.Prime requires io.Output out, data.IntUtil iu {
+    bool Prime:isPrime(int num, int start, int end) {
+		if (num <= 3) {
+			return num > 1
+		}
+
+		for (int i = start; i < end; i++) {
+			if (num % i == 0) {
+				return false
+			}
+		}
+
+		return true
+	}
+}

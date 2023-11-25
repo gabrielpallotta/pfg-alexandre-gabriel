@@ -1,0 +1,182 @@
+uses data.String
+
+data Param {
+	char value[]
+}
+
+data Request {
+	char functionName[]
+	int numParams
+	Param params[]
+}
+
+data Response {
+	// 1 OK - 2 FAILED
+	byte status
+	// if it's null or "" this has to be translated to null
+	char value[]
+}
+
+data IPAddr {
+	char ip[]
+	int port
+}
+
+data Int {
+	int i
+}
+
+data ShardState {
+	Int state[]
+}
+
+/* Available list operations */
+const char IS_PRIME[] = "isPrime"
+
+component 
+  provides
+    prime.Prime(Destructor, AdaptEvents) 
+  requires 
+    net.TCPSocket,
+    data.json.JSONEncoder parser,
+    data.StringUtil strUtil,
+    data.IntUtil iu,
+    io.Output out,
+    hash.Multiplicative hash,
+    serverctl.Serverctl SCTL
+{
+	IPAddr remoteDistIps[] = null
+  	IPAddr remoteListsIps[] = null
+
+	void startRemoteIps() {
+		out.println("Starting prime sharding proxy...")
+
+		String pods[] = SCTL.get_service_names()
+		remoteDistIps = new IPAddr[pods.arrayLength]
+		remoteListsIps = new IPAddr[pods.arrayLength] 
+		for (int i = 0; i < pods.arrayLength; i++){
+			remoteDistIps[i] = new IPAddr()
+			remoteDistIps[i].ip = new char[]("$(pods[i].string)")
+			remoteDistIps[i].port = 5000
+
+			remoteListsIps[i] = new IPAddr()
+			remoteListsIps[i].ip = new char[]("$(pods[i].string)")
+			remoteListsIps[i].port = 5001
+		}
+  }
+
+	Response parseResponse(char content[]) {
+		String helper[] = strUtil.explode(content, "!")
+		Response response
+		if (helper.arrayLength > 1) {
+			response = parser.jsonToData(helper[0].string, typeof(Response), null)
+			Response response2 = new Response()
+			response2.value = helper[1].string
+			response2.status = response.status
+			response = response2
+		} else {
+			response = parser.jsonToData(content, typeof(Response), null)
+		}
+		return response
+	}
+
+	Response readResponse(TCPSocket s) {
+		Response response = null
+		char buf[] = null
+		int len = 0
+		char command[] = null
+		while ((buf = s.recv(1)).arrayLength > 0) {
+			command = new char[](command, buf)
+			len++
+			//stop condition
+			if (len >= 4) {
+				if ((command[len-4] == "\r") && (command[len-3] == "\r") &&
+					(command[len-2] == "\r") && (command[len-1] == "\r")) {
+					response = parseResponse(strUtil.subString(command,
+						0, command.arrayLength-4))
+					break
+				}
+			}
+		}
+		if (response == null) { s.disconnect() }
+		return response
+	}
+
+	bool establishConnection(IPAddr addr, TCPSocket remoteObj) {
+    out.println("$(addr.ip)")
+    out.println("$(iu.intToString(addr.port))")
+		if (!remoteObj.connect(addr.ip, addr.port)) {
+			out.println("Connection error!")
+			return false
+		}
+		return true
+	}
+
+	Response makeRequest(IPAddr addr, char content[], bool readResponse) {
+		out.println("Sending request to $(addr.ip):$(addr.port): $(content)")
+
+    	TCPSocket remoteObj = new TCPSocket()
+		Response resp = null
+		if (establishConnection(addr, remoteObj)) {
+			remoteObj.send(content)
+			if (readResponse) { resp = readResponse(remoteObj) }
+			remoteObj.disconnect()
+		}
+		return resp
+	}
+
+	void makeRequestAsync(IPAddr addr, char content[], Response responses[], int index) {
+		responses[index] = makeRequest(addr, content, true)
+	}
+
+	bool Prime:isPrime(int num, int start, int end) {
+		Request request = new Request()
+		request.functionName = IS_PRIME
+		request.numParams = 3
+		char requestStr[] = parser.jsonFromData(request, null)
+		
+		Thread threads[] = new Thread[remoteListsIps.arrayLength]()
+		Response responses[] = new Response[remoteListsIps.arrayLength]()
+
+
+		for (int i = 0; i < remoteListsIps.arrayLength; i++) {
+			int rangeSize = (num - 2) / remoteListsIps.arrayLength
+			int rangeStart = 2 + i * rangeSize
+			int rangeEnd = 2 + (i + 1) * rangeSize
+
+			char content[] = new char[](requestStr, "!", iu.makeString(num), "!", iu.makeString(rangeStart), "!", iu.makeString(rangeEnd), "\r\r\r\r")
+			threads[i] = asynch::makeRequestAsync(remoteListsIps[i], content, responses, i)
+		}
+
+		for (int i = 0; i < remoteListsIps.arrayLength; i++) {
+			threads[i].join()
+		}
+
+		for (int i = 0; i < remoteListsIps.arrayLength; i++) {
+			if (responses[i].value == "NOT PRIME") {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	void Destructor:destroy() {
+		
+	}
+
+	void AdaptEvents:inactive() {
+		out.println("Deactivating prime proxy...")
+	}
+
+	void AdaptEvents:active() {
+		out.println("Activating prime proxy...")
+
+		startRemoteIps()
+
+		for (int i = 0; i < remoteDistIps.arrayLength; i++) {
+		 	char msg[] = new char[]("../distributor/RemotePrime.o!\r\r\r\r")
+		 	makeRequest(remoteDistIps[i], msg, true)
+		 }
+	}
+}

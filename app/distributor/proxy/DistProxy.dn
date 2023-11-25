@@ -20,62 +20,44 @@ data Int {
 }
 
 /* Available list operations */
-const char ADD[]          = "add"
-const char GET_LENGTH[]   = "getLength"
-const char GET_CONTENTS[] = "getContents"
+const char IS_PRIME[] = "isPrime"
 
 component provides proxy.DistProxy requires io.Output out, data.IntUtil iu, net.TCPSocket,
-	net.TCPServerSocket, data.adt.List:heap list, data.json.JSONEncoder parser, data.StringUtil strUtil  {
+	net.TCPServerSocket, prime.Prime prime, data.json.JSONEncoder parser, data.StringUtil strUtil  {
 
 	bool serviceStatus
 	TCPServerSocket host
 
-	Response addRequest(Request request) {
+	Response isPrimeRequest(Request request) {
 		Response response = new Response()
 
-		Int item = parser.jsonToData(request.params[0].value, typeof(Int), null)
-		list.add(item)
+		int num = iu.intFromString(request.params[0].value)
+		int start = iu.intFromString(request.params[1].value)
+		int end = iu.intFromString(request.params[2].value)
 
-		response.status = 1
-		response.value = ""
+		out.println("Received isPrime request: $(num) $(start) $(end)")
 
-		return response
-	}
-
-	Response getLengthRequest(Request request) {
-		Response response = new Response()
-
-		response.status = 1
-		response.value = new char[](iu.intToString(list.getLength()))
-
-		return response
-	}
-
-	Response getContentsRequest(Request request) {
-		Response response = new Response()
-
-		Data nums[] = list.getContents()
-		Int result[] = new Int[nums.arrayLength]
-		for (int i = 0; i < nums.arrayLength; i++) {
-			result[i] = nums[i]
-		}
 		response.status = 3
-		response.value = parser.jsonFromArray(result, null)
 
+		if (prime.isPrime(num, start, end)) {
+			response.value = "PRIME"
+		} else {
+			response.value = "NOT PRIME"
+		}
+
+		out.println("Responding with $(response.value)")
+
+		
 		return response
 	}
 
 	Response interpretRequest(Request request) {
-		if (request.functionName == ADD) {
-			return addRequest(request)
+		out.println("Interpreting request: $(request.functionName)")
 
-		} else if (request.functionName == GET_LENGTH) {
-			return getLengthRequest(request)
-
-		} else if (request.functionName == GET_CONTENTS) {
-			return getContentsRequest(request)
-
+		if (request.functionName == IS_PRIME) {
+			return isPrimeRequest(request)
 		} else {
+			out.println("Received unknown request")
 			Response response = new Response()
 			response.status = 2
 			response.value = ""
@@ -84,13 +66,14 @@ component provides proxy.DistProxy requires io.Output out, data.IntUtil iu, net.
 	}
 
 	Request parseRequest(char content[]) {
+		out.println("Received content: $(content)")
 		String helper[] = strUtil.explode(content, "!")
 		Request request = parser.jsonToData(helper[0].string, typeof(Request), null)
 		Request newRequest = new Request()
 		newRequest.numParams = request.numParams
 		newRequest.functionName = request.functionName
+		newRequest.params = new Param[newRequest.numParams]()
 		for (int i = 0; i < newRequest.numParams; i++) {
-			newRequest.params = new Param[newRequest.numParams]()
 			newRequest.params[i] = new Param()
 			newRequest.params[i].value = helper[i+1].string
 		}
@@ -142,7 +125,7 @@ component provides proxy.DistProxy requires io.Output out, data.IntUtil iu, net.
 	}
 
 	void DistProxy:start(int port) {
-		out.println("STARTED")
+		out.println("Starting DistProxy")
 		serviceStatus = true
 		host = new TCPServerSocket()
 		if (!host.bind(TCPServerSocket.ANY_ADDRESS, port)) {
