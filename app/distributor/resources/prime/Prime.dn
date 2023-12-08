@@ -1,0 +1,3 @@
+interface Prime {
+    bool isPrime(int num, int start, int end)
+}

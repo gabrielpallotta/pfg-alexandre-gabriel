@@ -37,6 +37,7 @@ component
     out.println(" $(HELP) - to list all commands")
     out.println(" $(CREATE) - to create pods")
     out.println(" $(SHARDING) - to distribute prime with sharding")
+    out.println(" $(ALTERNATE) - to distribute users with round-robin")
     out.println(" $(LOCAL) - to bring prime locally")
     out.println(" $(PERCEPTION) - to get perception data from the current running composition")
     out.println(" $(EXIT) - to finish execution")
@@ -62,7 +63,7 @@ component
     t.sleep(9000) // Temp solution
     out.println("$(iu.intFromString(quantity)) pods were created")
 
-    char remoteConfig[] = getRemoteConfig("prime/$(proxyInterface)")
+    char remoteConfig[] = getRemoteConfig("$(proxyInterface)")
     if (remoteConfig != null) {	
       perception.setConfig(remoteConfig)
       out.println("$(debugMSG) Remote composition [($proxyInterface)] running.")	
@@ -117,7 +118,9 @@ component
       if (cmd == HELP) {
         help()
       } else if (cmd == SHARDING) {
-        distribute("PrimeCPSharding.o")
+        distribute("prime/PrimeCPSharding.o")
+      } else if (cmd == ALTERNATE) {
+        distribute("users/UsersCPAlternate.o")
       } else if (cmd == LOCAL) {
         local()
       } else if (cmd == PERCEPTION) {
@@ -168,14 +171,15 @@ component
   void loadDistributedProxies() {
     if (distributedProxies == null) {
       distributedProxies = new String[](
-        new String("PrimeCPSharding.o"))
+        new String("PrimeCPSharding.o"),
+        new String("UsersCPAlternate.o"))
     }
   }
 
   int App:main(AppParam params[]) {
     perception = new Perception(true)
     /* Loading target system and adding a monitoring proxy to it */
-    perception.setMain("../server/main.o", null)
+    perception.setMain("../server-users/main.o", null)
     perception.addProxy("|../distributor/monitoring/proxies/ServerProxy.o|*(*:server.Server[0]:*)|")
     
         String configs[] = perception.getAllConfigs()

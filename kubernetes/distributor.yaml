@@ -16,11 +16,18 @@ spec:
     spec:
       containers:
       - name: distributor
-        image: us-central1-docker.pkg.dev/pfg-alexandre-gabriel/pfg-alexandre-gabriel/distributor-prime:latest
+        image: us-central1-docker.pkg.dev/pfg-alexandre-gabriel/pfg-alexandre-gabriel/distributor-users:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
         - containerPort: 5001
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "400m"
+          limits:
+            memory: "256Mi"
+            cpu: "400m"
 ---
 apiVersion: v1
 kind: Service

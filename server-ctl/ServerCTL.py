@@ -27,11 +27,18 @@ def load_deployment(deployment_name):
         spec:
           containers:
           - name: {deployment_name}
-            image: us-central1-docker.pkg.dev/pfg-alexandre-gabriel/pfg-alexandre-gabriel/remote-dist-prime:latest
+            image: us-central1-docker.pkg.dev/pfg-alexandre-gabriel/pfg-alexandre-gabriel/remote-dist-users:latest
             imagePullPolicy: Always
             ports:
             - containerPort: 5000
             - containerPort: 5001
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "200m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
   ''')
 
 def load_service(deployment_name):

@@ -16,10 +16,17 @@ spec:
     spec:
       containers:
       - name: serverctl
-        image: us-central1-docker.pkg.dev/pfg-alexandre-gabriel/pfg-alexandre-gabriel/server-ctl-prime:latest
+        image: us-central1-docker.pkg.dev/pfg-alexandre-gabriel/pfg-alexandre-gabriel/server-ctl-users:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
 ---
 apiVersion: v1
 kind: Service

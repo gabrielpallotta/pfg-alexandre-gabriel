@@ -1,0 +1,3 @@
+interface Users {
+    char[] getUsers(char ids[])
+}
