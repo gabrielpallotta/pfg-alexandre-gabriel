@@ -1,0 +1,54 @@
+component provides users.Users(AdaptEvents) requires util.Random random, io.Output out, io.TextFile, data.StringUtil strUtil, data.IntUtil intUtil, data.adt.HashTable, data.StringBuilder {
+
+    HashTable users
+    bool usersLoaded = false
+
+	void loadUsers() {
+        out.println("Loading users file...")
+
+        users = new HashTable()
+        TextFile file = new TextFile("users.txt", File.READ)
+        
+        if (file == null) {
+            throw new Exception("Users file not found")
+        }
+        
+        char line[]
+        while ((line = file.readLine()) != null) {
+            String fields[] = strUtil.explode(line, new char[](","))
+            for (int i = 0; i < fields.arrayLength; i++) {
+                String field = fields[i]
+                String keyValue[] = strUtil.explode(field.string, new char[](":"))
+                String key = keyValue[0]
+                String value = keyValue[1]
+
+                if (key.string == "id") {
+                    users.put(value.string, new String(line))
+                    break
+                }
+            }
+        }
+
+        file.close()
+
+        out.println("Users file loaded!")
+    }
+
+    char[] Users:getUsers(char ids[]) {
+        if (!usersLoaded) {
+            loadUsers()
+            usersLoaded = true
+        }
+
+        StringBuilder response = new StringBuilder()
+        String tokens[] = strUtil.explode(ids, new char[](","))
+    
+        for (int i = 0; i < tokens.arrayLength; i++) {
+            String user = users.get(strUtil.trim(tokens[i].string))
+            response.add(user.string)
+            response.add(" ")
+        }
+
+        return response.get()
+    }
+}

@@ -25,7 +25,7 @@ component provides App requires io.Output out, net.TCPSocket, net.TCPServerSocke
 			params[0].string = iu.intToString(portApp)
 			assembly.setMain(remoteP, params)
 			assembly.removeComp(new String[](
-				new String("./prime/PrimeCPSharding.o")))
+				new String("./users/UsersCPAlternate.o")))
 			out.println("$(debugMSG) Remote Component $(remoteP) Started! ")
 			running = true
 			remote = assembly.getCompsByProvidedInterface("proxy.DistProxy")

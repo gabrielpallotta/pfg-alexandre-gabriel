@@ -19,11 +19,11 @@ data Int {
 	int i
 }
 
-/* Available list operations */
 const char IS_PRIME[] = "isPrime"
+const char GET_USERS[] = "getUsers"
 
 component provides proxy.DistProxy requires io.Output out, data.IntUtil iu, net.TCPSocket,
-	net.TCPServerSocket, prime.Prime prime, data.json.JSONEncoder parser, data.StringUtil strUtil  {
+	net.TCPServerSocket, prime.Prime prime, users.Users users, data.json.JSONEncoder parser, data.StringUtil strUtil  {
 
 	bool serviceStatus
 	TCPServerSocket host
@@ -51,11 +51,24 @@ component provides proxy.DistProxy requires io.Output out, data.IntUtil iu, net.
 		return response
 	}
 
+	Response getUsers(Request request) {
+		Response response = new Response()
+
+		out.println("Received getUsers request")
+
+		response.status = 3
+		response.value = users.getUsers(request.params[0].value)
+
+		return response
+	}
+
 	Response interpretRequest(Request request) {
 		out.println("Interpreting request: $(request.functionName)")
 
 		if (request.functionName == IS_PRIME) {
 			return isPrimeRequest(request)
+		} else if (request.functionName == GET_USERS) {
+			return getUsers(request)
 		} else {
 			out.println("Received unknown request")
 			Response response = new Response()

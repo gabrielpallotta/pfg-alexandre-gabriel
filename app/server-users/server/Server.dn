@@ -1,0 +1,23 @@
+component provides server.Server requires io.Output out, users.Users users,
+	http.HTTPUtil httpUtil, data.IntUtil iu, data.DecUtil du, util.Math math {
+
+	void Server:process(HTTPMessage msg) {
+		if (msg.command == "GET") {
+			sendResponse(msg, "Hello from Users Dana server!")
+		} else if (msg.command == "POST") {
+			char response[] = users.getUsers(msg.postData)
+			sendResponse(msg, response)
+		}
+	}
+
+	void sendResponse(HTTPMessage httpMessage, char response[]) {
+		httpMessage.socket.send("HTTP/1.1 200 OK\r\n")
+		httpMessage.socket.send("Server: $(HTTPUtil.SERVER_NAME)\r\n")
+		httpMessage.socket.send("Content-Encoding: binary\r\n")
+		httpMessage.socket.send("Content-Length: $(iu.intToString(response.arrayLength))\r\n")
+		httpMessage.socket.send("Connection: close\r\n")
+		httpMessage.socket.send("Content-Type: $(httpMessage.mimeType)\r\n")
+		httpMessage.socket.send("\r\n")
+		httpMessage.socket.send(response)
+	}
+}

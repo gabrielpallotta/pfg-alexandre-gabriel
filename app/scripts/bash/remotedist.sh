@@ -1,2 +1,2 @@
 #!/bin/bash
-dana -sp ../server RemoteDist.o 5000 5001
+dana -sp ../server-users RemoteDist.o 5000 5001
